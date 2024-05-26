@@ -1,5 +1,5 @@
 #include <assert.h>
-
+#include <string.h>
 #define URLROUTER_IMPLEMENTATION
 #define URLROUTER_IO
 #include "urlrouter.h"
@@ -9,13 +9,13 @@ int main(void)
 	char data[2048];
 	urlrouter router;
 	urlrouter_init(&router, data, 2048);
-	assert(urlrouter_add(&router, "/a/b/c", (void *)1) > 0);
+	assert(urlrouter_add(&router, "/a/b/c", "/a/b/c") > 0);
 	urlrouter_print(&router);
-	assert(urlrouter_add(&router, "/a/b/c/e/ef", (void *)1) > 0);
+	assert(urlrouter_add(&router, "/a/b/c/e/ef", "/a/b/c/e/ef") > 0);
 	urlrouter_print(&router);
-	assert(urlrouter_add(&router, "/blabl", (void *)1) > 0);
+	assert(urlrouter_add(&router, "/blabl", "/blabl") > 0);
 	urlrouter_print(&router);
-	assert(urlrouter_add(&router, "/blabl/7", (void *)1) > 0);
+	assert(urlrouter_add(&router, "/blabl/7", "/blabl/7") > 0);
 	assert(urlrouter_add(&router, "/blabl/14", (void *)1) > 0);
 	assert(urlrouter_add(&router, "/blabl/14", (void *)1) == URLROUTER_ERR_PATH_EXISTS);
 	urlrouter_print(&router);
@@ -25,7 +25,7 @@ int main(void)
 	assert(urlrouter_add(&router, "/route2", (void *)1) > 0);
 	urlrouter_print(&router);
 	assert(urlrouter_add(&router, "/a/b/c/3", (void *)1) > 0);
-	assert(urlrouter_add(&router, "/route4", (void *)1) > 0);
+	assert(urlrouter_add(&router, "/route7", "/route7") > 0);
 	assert(urlrouter_add(&router, "/a/b/c/e/5", (void *)1) > 0);
 	assert(urlrouter_add(&router, "/a/b/c/6", (void *)1) > 0);
 	assert(urlrouter_add(&router, "/blabl/713", (void *)1) > 0);
@@ -34,9 +34,14 @@ int main(void)
 	assert(urlrouter_add(&router, "/a/b/c/e/10", (void *)1) > 0);
 	assert(urlrouter_add(&router, "/route11", (void *)1) > 0);
 	assert(urlrouter_add(&router, "/a/b/c/12", (void *)1) > 0);
-	assert(urlrouter_add(&router, "/route13", (void *)1) > 0);
+	assert(urlrouter_add(&router, "/route13", "/route13") > 0);
 	printf("%ld\n", urlrouter_add(&router, "/route43", (void *)1));
 	printf("%ld\n", urlrouter_add(&router, "/roaute43", (void *)1));
+	urlrouter_print(&router);
+
+	assert(urlrouter_find(&router, "/route13") == "/route13");
+	assert(urlrouter_find(&router, "/route7") == "/route7");
+	assert(urlrouter_find(&router, "/blabl/7") == "/blabl/7");
 	// assert(urlrouter_add(&router, "/blabl/14", (void *)1) > 0);
 	// assert(urlrouter_add(&router, "/a/b/c/15", (void *)1) > 0);
 	// assert(urlrouter_add(&router, "/route16", (void *)1) > 0);

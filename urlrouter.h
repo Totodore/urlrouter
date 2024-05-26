@@ -51,6 +51,8 @@ extern "C"
 #endif
 
 #ifdef URLROUTER_IMPLEMENTATION
+#define IS_FRAG_END(node) (frag - node->frag == node->frag_len || *frag == '\0')
+
 	static inline unsigned int urlrouter_strlen(const char *s)
 	{
 		const char *p = s;
@@ -58,9 +60,12 @@ extern "C"
 			;
 		return p - s;
 	}
-	static inline urlrouter_node *urlrouter_create_node(urlrouter *router)
+	static inline urlrouter_node *urlrouter_create_node(urlrouter *router, const char *frag, unsigned int frag_len, const void *data)
 	{
 		urlrouter_node node = {0};
+		node.frag = frag;
+		node.frag_len = frag_len;
+		node.data = data;
 
 		char *d = (char *)router->buffer + router->cursor * sizeof(urlrouter_node);
 		if (d + sizeof(urlrouter_node) > (char *)router->buffer + router->len)
@@ -87,7 +92,6 @@ extern "C"
 
 	int urlrouter_add(urlrouter *router, const char *path, const void *data)
 	{
-#define IS_FRAG_END(node) (frag - node->frag == node->frag_len || *frag == '\0')
 #define REM_SPACE router->len - router->cursor * sizeof(urlrouter_node)
 
 		const char *p = path;
@@ -95,12 +99,9 @@ extern "C"
 
 		if (node == NULL)
 		{
-			node = urlrouter_create_node(router);
+			node = urlrouter_create_node(router, p, urlrouter_strlen(p), data);
 			if (node == NULL)
 				return URLROUTER_ERR_BUFF_FULL;
-			node->frag = p,
-			node->frag_len = urlrouter_strlen(p),
-			node->data = data,
 
 			router->root = router->buffer;
 			return REM_SPACE;
@@ -123,12 +124,9 @@ extern "C"
 			else if (*frag != *p && !node->next_sibling)
 			{
 				printf("Fragment is different, create a new sibling %s\n", path);
-				urlrouter_node *new_node = urlrouter_create_node(router);
+				urlrouter_node *new_node = urlrouter_create_node(router, p, urlrouter_strlen(p), data);
 				if (new_node == NULL)
 					return URLROUTER_ERR_BUFF_FULL;
-				new_node->frag = p,
-				new_node->frag_len = urlrouter_strlen(p),
-				new_node->data = data;
 
 				node->next_sibling = new_node;
 				return REM_SPACE;
@@ -152,12 +150,9 @@ extern "C"
 			else if (!node->first_child && IS_FRAG_END(node))
 			{
 				printf("Appending new child to %.*s, path: %s\n", node->frag_len, node->frag, path);
-				urlrouter_node *new_node = urlrouter_create_node(router);
+				urlrouter_node *new_node = urlrouter_create_node(router, p, urlrouter_strlen(p), data);
 				if (new_node == NULL)
 					return URLROUTER_ERR_BUFF_FULL;
-				new_node->frag = p,
-				new_node->frag_len = urlrouter_strlen(p),
-				new_node->data = data;
 
 				node->first_child = new_node;
 				return REM_SPACE;
@@ -166,24 +161,21 @@ extern "C"
 			else if (!IS_FRAG_END(node))
 			{
 				printf("Split the current child to add the new node as a sibling %s\n", path);
-				urlrouter_node *splited_node = urlrouter_create_node(router);
+				urlrouter_node *splited_node = urlrouter_create_node(router,
+																	 node->frag + (frag - node->frag),
+																	 node->frag_len - (frag - node->frag), node->data);
 				if (splited_node == NULL)
 					return URLROUTER_ERR_BUFF_FULL;
-				splited_node->frag = node->frag + (frag - node->frag),
-				splited_node->frag_len = node->frag_len - (frag - node->frag),
-				splited_node->data = node->data;
+
 				splited_node->first_child = node->first_child;
 
 				// Transform the current node into a parent subset
 				node->frag_len = frag - node->frag;
 				node->first_child = splited_node;
 
-				urlrouter_node *new_node = urlrouter_create_node(router);
+				urlrouter_node *new_node = urlrouter_create_node(router, p, urlrouter_strlen(p), data);
 				if (new_node == NULL)
 					return URLROUTER_ERR_BUFF_FULL;
-				new_node->frag = p,
-				new_node->frag_len = urlrouter_strlen(p),
-				new_node->data = data;
 
 				splited_node->next_sibling = new_node;
 
@@ -198,7 +190,6 @@ extern "C"
 
 		return REM_SPACE;
 
-#undef IS_FRAG_END
 #undef REM_SPACE
 	}
 
@@ -210,7 +201,7 @@ extern "C"
 		while (*p)
 		{
 			const char *frag = node->frag;
-			while (*frag == *p && *frag != '\0' && *p != '\0')
+			while (*frag == *p && !IS_FRAG_END(node) && *p != '\0')
 			{
 				frag++;
 				p++;
@@ -223,19 +214,24 @@ extern "C"
 					node = node->next_sibling;
 					continue;
 				}
+				else if (node->first_child)
+				{
+					node = node->first_child;
+					continue;
+				}
 				else
 				{
 					return NULL;
 				}
 			}
 
-			if (node->first_child)
-			{
-				node = node->first_child;
-			}
-			else if (*++frag == '\0')
+			else if (IS_FRAG_END(node) && *p == '\0')
 			{
 				return node->data;
+			}
+			else if (node->first_child)
+			{
+				node = node->first_child;
 			}
 			else
 			{
@@ -281,6 +277,7 @@ extern "C"
 	}
 #endif
 
+#undef IS_FRAG_END
 #endif // URLROUTER_IMPLEMENTATION
 
 #ifdef __cplusplus
