@@ -318,7 +318,7 @@ extern "C"
 
 #ifdef URLROUTER_IO
 
-	static inline void urlrouter_print_node(const urlrouter_node *node, int depth)
+	static inline void urlrouter__print_node(const urlrouter_node *node, int depth)
 	{
 		while (node != NULL)
 		{
@@ -337,7 +337,7 @@ extern "C"
 			// Print the first child with increased depth
 			if (node->first_child != NULL)
 			{
-				urlrouter_print_node(node->first_child, depth + node->frag_len);
+				urlrouter__print_node(node->first_child, depth + node->frag_len);
 			}
 
 			// Move to the next sibling
@@ -347,7 +347,7 @@ extern "C"
 	void urlrouter_print(const urlrouter *router)
 	{
 		printf("URL Router:\n");
-		urlrouter_print_node(router->root, 0);
+		urlrouter__print_node(router->root, 0);
 	}
 #endif
 
