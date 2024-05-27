@@ -6,8 +6,6 @@ A header-only, zero-allocation, no std efficient url router in C99.
 #define URLROUTER_IMPLEMENTATION
 #include <urlrouter.h>
 
-
-
 int main(void) {
     urlrouter router;
     char buff[1024 * 4];
