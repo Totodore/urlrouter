@@ -1,6 +1,6 @@
 CC = gcc
 WARNINGS = -Wpedantic -Wall -Wextra
-CFLAGS = -std=c99 $(WARNINGS) -g
+CFLAGS = -std=c99 $(WARNINGS) -g -O3
 
 .PHONY: clean
 

@@ -114,8 +114,6 @@ extern "C"
 			// If the fragment is different, go to the next sibling
 			if (*frag != *p && node->next_sibling)
 			{
-				printf("Fragment is different, go to the next sibling, curr: %.*s, next: %.*s\n",
-					   node->frag_len, node->frag, node->next_sibling->frag_len, node->next_sibling->frag);
 				node = node->next_sibling;
 				frag = node->frag;
 				continue;
@@ -123,7 +121,6 @@ extern "C"
 			// If the fragment is different and there is no sibling, create a new sibling
 			else if (*frag != *p && !node->next_sibling)
 			{
-				printf("Fragment is different, create a new sibling %s\n", path);
 				urlrouter_node *new_node = urlrouter_create_node(router, p, urlrouter_strlen(p), data);
 				if (new_node == NULL)
 					return URLROUTER_ERR_BUFF_FULL;
@@ -149,7 +146,6 @@ extern "C"
 			// If the frag is exhausted and there is no children we can append a new child
 			else if (!node->first_child && IS_FRAG_END(node))
 			{
-				printf("Appending new child to %.*s, path: %s\n", node->frag_len, node->frag, path);
 				urlrouter_node *new_node = urlrouter_create_node(router, p, urlrouter_strlen(p), data);
 				if (new_node == NULL)
 					return URLROUTER_ERR_BUFF_FULL;
@@ -160,7 +156,6 @@ extern "C"
 			// If the path is exhausted, we should split the current child to add the new node as a sibling
 			else if (!IS_FRAG_END(node))
 			{
-				printf("Split the current child to add the new node as a sibling %s\n", path);
 				urlrouter_node *splited_node = urlrouter_create_node(router,
 																	 node->frag + (frag - node->frag),
 																	 node->frag_len - (frag - node->frag), node->data);
