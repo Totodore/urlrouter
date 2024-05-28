@@ -260,9 +260,10 @@ extern "C"
 				// Transform the current node into a parent subset
 				node->frag_len = frag - node->frag;
 
+				if (*p != '\0')
+				{
 				urlrouter_node *new_node = urlrouter__create_node(router, p, urlrouter__strlen(p), data);
-				if (new_node == NULL)
-					return URLROUTER_ERR_BUFF_FULL;
+					assert(new_node != NULL);
 
 				// If the splitted node is a parameter we should put at the end to respect priority
 				if (!IS_PARAM(splited_node))
@@ -274,6 +275,12 @@ extern "C"
 				{
 					new_node->next_sibling = splited_node;
 					node->first_child = new_node;
+					}
+				}
+				else // The path is exhausted, we can just add the data to the parent subset node
+				{
+					node->first_child = splited_node;
+					node->data = data;
 				}
 
 				return REM_SPACE;
