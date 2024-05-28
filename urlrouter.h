@@ -356,7 +356,11 @@ extern "C"
 			else
 				printf("-");
 			// Print the fragment
-			printf("%.*s\n", node->frag_len, node->frag);
+			printf("%.*s", node->frag_len, node->frag);
+
+			for (int i = 0; i < 50 - node->frag_len - depth; ++i)
+				printf(" ");
+			printf("-> %p\n", node->data);
 
 			// Print the first child with increased depth
 			if (node->first_child != NULL)
