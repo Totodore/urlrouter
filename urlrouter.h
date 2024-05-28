@@ -14,6 +14,12 @@
 #include <stdio.h>
 #endif
 
+#ifdef URLROUTER_ASSERT
+#include <assert.h>
+#else
+#define assert(expr) ((void)0)
+#endif
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -84,6 +90,7 @@ extern "C"
 #define IS_FRAG_END(node) (frag - node->frag == node->frag_len || *frag == '\0')
 #define IS_VALID_PATH(c) ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '}')
 #define IS_PARAM(node) (node->frag[node->frag_len - 1] == '}')
+#define REM_SPACE (router->len - router->cursor * sizeof(urlrouter_node))
 
 	static inline unsigned int urlrouter__strlen(const char *s)
 	{
@@ -145,7 +152,6 @@ extern "C"
 
 	int urlrouter_add(urlrouter *router, const char *path, const void *data)
 	{
-#define REM_SPACE router->len - router->cursor * sizeof(urlrouter_node)
 
 		const char *p = path;
 		urlrouter_node *node = router->root, *previous = NULL;
@@ -185,6 +191,7 @@ extern "C"
 					return URLROUTER_ERR_BUFF_FULL;
 
 				// If current node is a parameter we should move it to the end to respect priority
+				assert(previous != NULL);
 				int is_param = IS_PARAM(node);
 				if (is_param && previous->first_child == node) // node is first sibling
 				{
@@ -248,12 +255,16 @@ extern "C"
 			{
 				if (urlrouter__verify_path(p) == URLROUTER_ERR_MALFORMED_PATH)
 					return URLROUTER_ERR_MALFORMED_PATH;
+
+				int node_cnt = *p != '\0' ? 1 : 2;
+				if (REM_SPACE < node_cnt * sizeof(urlrouter_node))
+					return URLROUTER_ERR_BUFF_FULL;
+
 				urlrouter_node *splited_node = urlrouter__create_node(router,
 																	  node->frag + (frag - node->frag),
 																	  node->frag_len - (frag - node->frag),
 																	  node->data);
-				if (splited_node == NULL)
-					return URLROUTER_ERR_BUFF_FULL;
+				assert(splited_node != NULL);
 
 				splited_node->first_child = node->first_child;
 
@@ -262,19 +273,19 @@ extern "C"
 
 				if (*p != '\0')
 				{
-				urlrouter_node *new_node = urlrouter__create_node(router, p, urlrouter__strlen(p), data);
+					urlrouter_node *new_node = urlrouter__create_node(router, p, urlrouter__strlen(p), data);
 					assert(new_node != NULL);
 
-				// If the splitted node is a parameter we should put at the end to respect priority
-				if (!IS_PARAM(splited_node))
-				{
-					splited_node->next_sibling = new_node;
-					node->first_child = splited_node;
-				}
-				else
-				{
-					new_node->next_sibling = splited_node;
-					node->first_child = new_node;
+					// If the splitted node is a parameter we should put at the end to respect priority
+					if (!IS_PARAM(splited_node))
+					{
+						splited_node->next_sibling = new_node;
+						node->first_child = splited_node;
+					}
+					else
+					{
+						new_node->next_sibling = splited_node;
+						node->first_child = new_node;
 					}
 				}
 				else // The path is exhausted, we can just add the data to the parent subset node
@@ -294,8 +305,6 @@ extern "C"
 		}
 
 		return REM_SPACE;
-
-#undef REM_SPACE
 	}
 
 	const void *urlrouter_find(const urlrouter *router, const char *path)
@@ -382,6 +391,7 @@ extern "C"
 #undef IS_FRAG_END
 #undef IS_VALID_PATH
 #undef IS_PARAM
+#undef REM_SPACE
 #endif // URLROUTER_IMPLEMENTATION
 
 #ifdef __cplusplus
