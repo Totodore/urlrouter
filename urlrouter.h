@@ -117,7 +117,7 @@ extern "C"
 	// - Path parameters should only contain alphanumeric characters
 	static inline int urlrouter__verify_path(const char *p)
 	{
-		char path_param = 0;
+		char path_param = *p == '{';
 		while (*p++)
 		{
 			if (path_param && !IS_VALID_PATH(*p))
