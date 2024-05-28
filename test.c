@@ -20,7 +20,6 @@ int main(void)
 	// urlrouter_add(&router, "/blabl/28", "/blabl/28");
 	urlrouter_add(&router, "/azd/{i}", "/azd/{id}");
 	urlrouter_add(&router, "/azd/{id/azd}/edit", "/azd/{id}/edit");
-	urlrouter_print(&router);
 
 	urlrouter_add(&router, "/cmd/{tool}/{sub}", "/cmd/{tool}/{sub}"); // /a/b
 	urlrouter_add(&router, "/cmd/vet", "/cmd/vet");
@@ -45,11 +44,8 @@ int main(void)
 	urlrouter_add(&router, "/src2", "/src2");
 	urlrouter_add(&router, "/src3", "/src3");
 	urlrouter_add(&router, "/src3/{*filepath}", "/src3/{*filepath}");
-	urlrouter_print(&router);
 	urlrouter_add(&router, "/search/{query}", "/search/{query}");
-	urlrouter_print(&router);
 	urlrouter_add(&router, "/search/valid", "/search/valid");
-	urlrouter_print(&router);
 	urlrouter_add(&router, "/user_{name}", "/user_{name}");
 	urlrouter_add(&router, "/user_x", "/user_x");
 	// assert(urlrouter_add(&router, "/user_{bar}", "/user_{bar}") == URLROUTER_ERR_PATH_EXISTS);

@@ -148,7 +148,7 @@ extern "C"
 #define REM_SPACE router->len - router->cursor * sizeof(urlrouter_node)
 
 		const char *p = path;
-		urlrouter_node *node = router->root;
+		urlrouter_node *node = router->root, *previous = NULL;
 		char frag_param = 0, path_param = 0;
 
 		if (node == NULL)
@@ -170,6 +170,7 @@ extern "C"
 			// If the fragment is different, go to the next sibling
 			if (*frag != *p && node->next_sibling)
 			{
+				previous = node;
 				node = node->next_sibling;
 				frag = node->frag;
 				continue;
@@ -183,7 +184,21 @@ extern "C"
 				if (new_node == NULL)
 					return URLROUTER_ERR_BUFF_FULL;
 
-				node->next_sibling = new_node;
+				// If current node is a parameter we should move it to the end to respect priority
+				int is_param = IS_PARAM(node);
+				if (is_param && previous->first_child == node) // node is first sibling
+				{
+					new_node->next_sibling = node;
+					previous->first_child = new_node;
+				}
+				else if (is_param && previous->next_sibling == node) // node is one of the siblings
+				{
+					new_node->next_sibling = node;
+					previous->next_sibling = new_node;
+				}
+				else
+					node->next_sibling = new_node;
+
 				return REM_SPACE;
 			}
 
@@ -212,6 +227,7 @@ extern "C"
 
 			if (node->first_child && IS_FRAG_END(node))
 			{
+				previous = node;
 				node = node->first_child;
 				frag = node->frag;
 			}
@@ -264,6 +280,7 @@ extern "C"
 			}
 			else if (node->first_child)
 			{
+				previous = node;
 				node = node->first_child;
 				frag = node->frag;
 			}
