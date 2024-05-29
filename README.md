@@ -1,6 +1,6 @@
 # urlrouter
 A header-only, zero-allocation, no std efficient url router in C99.
-It is implemented with a [radix trie][https://en.wikipedia.org/wiki/Radix_tree) and scales well with a high number of routes.
+It is implemented with a [radix trie](https://en.wikipedia.org/wiki/Radix_tree) and scales well with a high number of routes.
 
 ## Example
 ```c
