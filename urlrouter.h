@@ -339,11 +339,12 @@ extern "C"
 				p++;
 				if (*frag == '{')
 				{
-					if (params && param_cnt && param_i < len)
+					if (params && param_i < len)
 					{
 						params[param_i].value = p++;
 						params[param_i].len = 1;
-						++*param_cnt;
+						if (param_cnt)
+							++*param_cnt;
 					}
 					while (*frag++ != '}' && !IS_FRAG_END(node))
 						;
