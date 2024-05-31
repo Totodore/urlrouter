@@ -1,10 +1,9 @@
 CC = gcc
-WARNINGS = -Wpedantic -Wall -Wextra
-CFLAGS = -std=c99 $(WARNINGS) -g
+CFLAGS = -std=c99 -Wpedantic -Wall -Wextra -g -O3
 
 .PHONY: clean
 
-build:
+build: urlrouter.h
 	$(CC) $(CFLAGS) -o test test.c
 
 clean:

@@ -53,6 +53,12 @@ extern "C"
 		unsigned long cursor;
 	} urlrouter;
 
+	typedef struct
+	{
+		const char *value;
+		unsigned int len;
+	} urlparam;
+
 	/**
 	 * @brief Initialize the router with a buffer and its size
 	 * @param router The router to initialize
@@ -72,12 +78,18 @@ extern "C"
 	int urlrouter_add(urlrouter *router, const char *path, const void *data);
 
 	/**
-	 * @brief Find a path in the router
+	 * @brief Find a path in the router and return its associated value and path params.
 	 * @param router The router to search in
 	 * @param path A null-terminated C string to search for
+	 * @param params An array that will be populated with each encountered params.
+	 * Can also be null if you don't care about params
+	 * @param len The length of the array
+	 * @param param_cnt A pointer that will be set to the number of encountered params
 	 * @returns The data associated with the path or NULL if the path is not found
 	 */
-	const void *urlrouter_find(const urlrouter *router, const char *path);
+	const void *urlrouter_find(
+		const urlrouter *router, const char *path,
+		urlparam *params, const unsigned int len, unsigned int *param_cnt);
 
 #ifdef URLROUTER_IO
 	/**
@@ -306,9 +318,14 @@ extern "C"
 		return REM_SPACE;
 	}
 
-	const void *urlrouter_find(const urlrouter *router, const char *path)
+	const void *urlrouter_find(const urlrouter *router, const char *path,
+							   urlparam *params, const unsigned int len, unsigned int *param_cnt)
 	{
+		// cannot have param_cnt set but not params
+		assert((params != NULL && param_cnt != NULL) || params == NULL);
+
 		const char *p = path;
+		unsigned int param_i = 0;
 		urlrouter_node *node = router->root;
 		if (!node)
 			return NULL;
@@ -320,6 +337,24 @@ extern "C"
 			{
 				frag++;
 				p++;
+				if (*frag == '{')
+				{
+					if (params && param_cnt && param_i < len)
+					{
+						params[param_i].value = p++;
+						params[param_i].len = 1;
+						++*param_cnt;
+					}
+					while (*frag++ != '}' && !IS_FRAG_END(node))
+						;
+					// Bench between local var and constant deref in loop
+					while (*p != '/' && *p != '\0')
+					{
+						if (params && param_i < len)
+							params[param_i].len++;
+						p++;
+					}
+				}
 			}
 
 			if (*frag != *p)
