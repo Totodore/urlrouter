@@ -1,9 +1,3 @@
-# urlrouter
-A header-only, zero-allocation, no std efficient url router in C99.
-It is implemented with a [radix trie](https://en.wikipedia.org/wiki/Radix_tree) and scales well with a high number of routes.
-
-## Example
-```c
 #include <stdio.h>
 
 #define URLROUTER_IMPLEMENTATION
@@ -27,13 +21,12 @@ int main(void)
 	urlrouter_add(&router, "/user/{id}/test", user);
 	urlrouter_add(&router, "/user", user);
 
-	urlparam params[5] = {0};
-	user_cb_t cb = urlrouter_find(&router, "/user/168/test", params, 5, NULL);
+	urlparam params[10] = {0};
+	user_cb_t cb = urlrouter_find(&router, "/user/168/test", params, 10, NULL);
 	if (cb)
 		cb(params[0]);
 	else
-		printf("route not found\n");
+		printf("Route not found\n");
 
 	return 0;
 }
-```
