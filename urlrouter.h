@@ -191,14 +191,13 @@ extern "C"
 					return URLROUTER_ERR_BUFF_FULL;
 
 				// If current node is a parameter we should move it to the end to respect priority
-				assert(previous != NULL);
 				int is_param = IS_PARAM(node);
-				if (is_param && previous->first_child == node) // node is first sibling
+				if (is_param && previous && previous->first_child == node) // node is first sibling
 				{
 					new_node->next_sibling = node;
 					previous->first_child = new_node;
 				}
-				else if (is_param && previous->next_sibling == node) // node is one of the siblings
+				else if (is_param && previous && previous->next_sibling == node) // node is one of the siblings
 				{
 					new_node->next_sibling = node;
 					previous->next_sibling = new_node;
