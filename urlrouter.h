@@ -177,7 +177,7 @@ extern "C"
 			if (node == NULL)
 				return URLROUTER_ERR_BUFF_FULL;
 
-			router->root = router->buffer;
+			router->root = (urlrouter_node *)router->buffer;
 			return REM_SPACE;
 		}
 
