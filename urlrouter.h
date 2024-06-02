@@ -101,7 +101,7 @@ extern "C"
 #ifdef URLROUTER_IMPLEMENTATION
 #define IS_FRAG_END(node) (frag - node->frag == node->frag_len || *frag == '\0')
 #define IS_VALID_PATH(c) ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '}')
-#define IS_PARAM(node) (node->frag[node->frag_len - 1] == '}')
+#define IS_PARAM(node) (node->frag[node->frag_len - 1] == '}' || node->frag[0] == '{')
 #define REM_SPACE (router->len - router->cursor * sizeof(urlrouter_node))
 
 	static inline unsigned int urlrouter__strlen(const char *s)
