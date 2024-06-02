@@ -332,7 +332,29 @@ extern "C"
 
 		while (*p)
 		{
+
 			const char *frag = node->frag;
+			if (*frag == '{' && !IS_FRAG_END(node))
+			{
+				if (params && param_i < len)
+				{
+					params[param_i].value = p++;
+					params[param_i].len = 1;
+					if (param_cnt)
+						++*param_cnt;
+				}
+				while (*frag++ != '}' && !IS_FRAG_END(node))
+					;
+				// Bench between local var and constant deref in loop
+				while (*p != '/' && *p != '\0')
+				{
+					if (params && param_i < len)
+						params[param_i].len++;
+					p++;
+				}
+				param_i++;
+			}
+
 			while (*frag == *p && !IS_FRAG_END(node) && *p != '\0')
 			{
 				frag++;
@@ -355,6 +377,7 @@ extern "C"
 							params[param_i].len++;
 						p++;
 					}
+					param_i++;
 				}
 			}
 
