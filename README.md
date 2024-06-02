@@ -2,6 +2,8 @@
 A header-only, zero-allocation, no std efficient url router in C99.
 It is implemented with a [radix trie](https://en.wikipedia.org/wiki/Radix_tree) and scales well with a high number of routes.
 
+It is inspired by the [matchit](https://lib.rs/matchit) crate in rust.
+
 ## Example
 ```c
 #include <stdio.h>
