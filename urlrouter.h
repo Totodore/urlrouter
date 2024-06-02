@@ -337,7 +337,7 @@ extern "C"
 			{
 				frag++;
 				p++;
-				if (*frag == '{')
+				if (*frag == '{' && !IS_FRAG_END(node))
 				{
 					if (params && param_i < len)
 					{
