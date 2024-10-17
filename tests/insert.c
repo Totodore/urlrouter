@@ -1,4 +1,5 @@
 #define URLROUTER_ASSERT
+#define URLROUTER_IO
 #include "urlrouter.h"
 
 #include <stdio.h>

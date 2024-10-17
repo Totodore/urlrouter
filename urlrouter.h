@@ -10,16 +10,6 @@
 #define NULL 0
 #endif
 
-#ifdef URLROUTER_IO
-#include <stdio.h>
-#endif
-
-#ifdef URLROUTER_ASSERT
-#include <assert.h>
-#else
-#define assert(expr) ((void)0)
-#endif
-
 #ifdef __cplusplus
 extern "C"
 {
@@ -57,9 +47,9 @@ extern "C"
 	} urlrouter;
 
 	/**
-     * The name of the parameter and its length.
-     * It is a slice of the original path given to urlrouter_find.
-	*/
+	 * The name of the parameter and its length.
+	 * It is a slice of the original path given to urlrouter_find.
+	 */
 	typedef struct
 	{
 		const char *value;
@@ -103,7 +93,7 @@ extern "C"
 
 #ifdef URLROUTER_IO
 	/**
-	 * @brief Print the router to the standard output with printf
+	 * @brief Print the router tree to the standard output with printf
 	 */
 	void urlrouter_print(const urlrouter *router);
 #endif

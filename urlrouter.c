@@ -1,5 +1,15 @@
 #include "urlrouter.h"
+
+#ifdef URLROUTER_IO
 #include <stdio.h>
+#endif
+
+#ifdef URLROUTER_ASSERT
+#include <assert.h>
+#else
+#define assert(expr) ((void)0)
+#endif
+
 
 typedef char bool;
 

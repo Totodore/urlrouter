@@ -22,9 +22,7 @@ int main(void)
 	urlrouter_print(&router);
 	int err = urlrouter_add(&router, "/user", user);
 	if (err)
-	{
 		printf("Error adding route: %d\n", err);
-	}
 	urlrouter_print(&router);
 
 	urlparam params[10] = {0};

@@ -4,6 +4,7 @@
 #define URLROUTER_ASSERT
 #include "urlrouter.h"
 
+#include <stdio.h>
 #include <assert.h>
 #include <time.h>
 
