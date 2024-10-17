@@ -1,4 +1,3 @@
-#define URLROUTER_IMPLEMENTATION
 #define URLROUTER_ASSERT
 #include "urlrouter.h"
 
@@ -6,7 +5,7 @@
 #include <stdlib.h>
 
 #define INSERT_TEST(name, ...)                                                     \
-	void name()                                                                    \
+	static void name(void)                                                         \
 	{                                                                              \
 		const void *routes[] = {__VA_ARGS__};                                      \
 		const size_t n = sizeof(routes) / 2;                                       \
@@ -59,7 +58,7 @@ INSERT_TEST(wildcard_conflict,
 			"/user_x", 								0,
 			"/user_{bar}", 							URLROUTER_ERR_PATH_EXISTS,
 			"/id{id}", 								0,
-			"/id/{id}", 							0 
+			"/id/{id}", 							0
 )
 
 INSERT_TEST(invalid_catchall,
@@ -127,7 +126,7 @@ INSERT_TEST(normalized_conflict,
 	"/{z}/bar/baz", 								URLROUTER_ERR_PATH_EXISTS
 )
 
-INSERT_TEST(more_conflicts, 
+INSERT_TEST(more_conflicts,
 	"/con{tact}", 									0,
 	"/who/are/{*you}", 								0,
 	"/who/foo/hello", 								0,
@@ -138,13 +137,13 @@ INSERT_TEST(more_conflicts,
 	"/whose/{users}/{user}", 						URLROUTER_ERR_PATH_EXISTS
 )
 
-INSERT_TEST(catchall_static_overlap_1, 
+INSERT_TEST(catchall_static_overlap_1,
 	"/bar", 										0,
 	"/bar/", 										0,
 	"/bar/{*foo}", 									0
 )
 
-INSERT_TEST(catchall_static_overlap_2, 
+INSERT_TEST(catchall_static_overlap_2,
 	"/foo", 										0,
 	"/{*bar}", 										0,
 	"/bar", 										0,
@@ -156,7 +155,7 @@ INSERT_TEST(catchall_static_overlap_2,
 	"/{xxx}", 										URLROUTER_ERR_PATH_EXISTS
 )
 
-INSERT_TEST(catchall_static_overlap_3, 
+INSERT_TEST(catchall_static_overlap_3,
 	"/{*bar}", 										0,
 	"/bar", 										0,
 	"/bar/x", 										0,
@@ -166,14 +165,14 @@ INSERT_TEST(catchall_static_overlap_3,
 	"/bar/{x}", 									0
 )
 
-INSERT_TEST(duplicate_conflict, 
+INSERT_TEST(duplicate_conflict,
 	"/hey", 										0,
 	"/hey/users", 									0,
 	"/hey/user", 									0,
 	"/hey/user", 									URLROUTER_ERR_PATH_EXISTS
 )
 
-INSERT_TEST(invalid_param, 
+INSERT_TEST(invalid_param,
 	"{", 											URLROUTER_ERR_MALFORMED_PATH,
 	"}", 											URLROUTER_ERR_MALFORMED_PATH,
 	"x{y", 											URLROUTER_ERR_MALFORMED_PATH,
@@ -199,7 +198,7 @@ INSERT_TEST(escaped_param,
 	"/xxx/{x{{}}y}", 								0
 )
 
-INSERT_TEST(bare_catchall, 
+INSERT_TEST(bare_catchall,
 	"{*foo}", 										0,
 	"foo/{*bar}", 									0
 )

@@ -1,6 +1,5 @@
 #define _POSIX_C_SOURCE 199309L
 
-#define URLROUTER_IMPLEMENTATION
 #define URLROUTER_IO
 #define URLROUTER_ASSERT
 #include "urlrouter.h"
