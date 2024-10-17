@@ -3,6 +3,7 @@
 
 typedef char bool;
 
+// Check if the current frag is exhausted. The node should be the one corresponding with the frag.
 static inline bool is_node_frag_end(urlrouter_node *node, const char *frag)
 {
 	return frag - node->frag == node->frag_len || *frag == '\0';
@@ -44,7 +45,7 @@ static inline urlrouter_node *create_node(urlrouter *router, const char *frag,
 	if (rem_space(router) < sizeof(urlrouter_node))
 		return NULL;
 
-	char *p = (char*)router->buffer + router->cursor * sizeof(urlrouter_node);
+	char *p = (char *)router->buffer + router->cursor * sizeof(urlrouter_node);
 	for (unsigned long i = 0; i < sizeof(urlrouter_node); i++)
 		((char *)p)[i] = 0;
 	urlrouter_node *node = (urlrouter_node *)p;
@@ -158,7 +159,9 @@ int urlrouter_add(urlrouter *router, const char *path, const void *data)
 			return rem_space(router);
 		}
 
-		do // Iterate over the fragment
+		// Iterate over the fragment until it the path and current fragment
+		// don't match
+		do
 		{
 			// TODO: implement escaping with {{ }}
 			if (*frag == '{' || *frag == '}')
@@ -399,10 +402,19 @@ void test_verify_path(void)
 	assert(verify_path("aézdi/{éazdazd}/az") == URLROUTER_ERR_MALFORMED_PATH);
 	assert(verify_path("\0") == URLROUTER_ERR_MALFORMED_PATH);
 }
+void test_node_frag_end(void)
+{
+	const char frag[] = "test";
+	urlrouter_node node = {.frag = frag, .frag_len = sizeof("test")};
+	assert(!is_node_frag_end(&node, frag));
+	assert(is_node_frag_end(&node, frag + 4));
+	assert(is_node_frag_end(&node, ""));
+}
 
 int main()
 {
 	test_verify_path();
+	test_node_frag_end();
 	printf("All tests passed!\n");
 	return 0;
 }
