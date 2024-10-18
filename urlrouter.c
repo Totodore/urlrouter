@@ -10,13 +10,13 @@
 #define assert(expr) ((void)0)
 #endif
 
-
 typedef char bool;
 
-// Check if the current frag is exhausted. The node should be the one corresponding with the frag.
+// Check if the current frag is exhausted.
+// The given node should match the given frag.
 static inline bool is_node_frag_end(urlrouter_node *node, const char *frag)
 {
-	return frag - node->frag == node->frag_len || *frag == '\0';
+	return frag - node->frag == node->frag_len;
 }
 // A node param has a fragment that starts with '{' and ends with '}'.
 // TODO: check with escaping characters
@@ -106,6 +106,7 @@ void urlrouter_init(urlrouter *router, void *buffer, unsigned long len)
 
 int urlrouter_add(urlrouter *router, const char *path, const void *data)
 {
+	assert(path != NULL);
 
 	const char *p = path;
 	urlrouter_node *node = router->root, *previous = NULL;
@@ -169,27 +170,35 @@ int urlrouter_add(urlrouter *router, const char *path, const void *data)
 			return rem_space(router);
 		}
 
-		// Iterate over the fragment until it the path and current fragment
+		// Iterate over the fragment until the path and current fragment
 		// don't match
-		do
+		while (*frag == *p && !is_node_frag_end(node, frag) && *p != '\0')
 		{
 			// TODO: implement escaping with {{ }}
-			if (*frag == '{' || *frag == '}')
-				frag_param = !frag_param;
-			if (*p == '{' || *p == '}')
-				path_param = !path_param;
-			frag++;
+			frag_param = *frag == '{';
+			path_param = *p == '{';
+			if (path_param || frag_param)
+				break;
 			p++;
-		} while (*frag == *p && !is_node_frag_end(node, frag) && *p != '\0' && !frag_param &&
-				 !path_param);
-
+			frag++;
+		}
+		assert(!frag_param || *frag == '{'); // A frag param should start with a '{'
+		assert(!path_param || *path == '{'); // A frag param should start with a '{'
+		// If a frag parameter is detected we iterate over it to consume it.
 		while (frag_param && *frag++ != '}' && !is_node_frag_end(node, frag))
 			;
-		do
+		if (frag_param && *frag == '}')
+			frag++;
+
+		// If a path_param is detected we iterate over it to consume it and we
+		// verify that the param is valid
+		while (path_param && *p++ != '\0' && *p != '}')
 		{
-			if (!is_valid_param(*p) && path_param)
+			if (!is_valid_param(*p))
 				return URLROUTER_ERR_MALFORMED_PATH;
-		} while (path_param && *p++ != '}' && *p != '\0');
+		}
+		if (path_param && *p == '}')
+			p++;
 		path_param = frag_param = 0;
 
 		if (is_node_frag_end(node, frag) && *p == '\0')
@@ -361,6 +370,7 @@ const void *urlrouter_find(const urlrouter *router, const char *path, urlparam *
 	return NULL;
 }
 
+#ifdef URLROUTER_IO
 static inline void print_node(const urlrouter_node *node, int depth)
 {
 	while (node != NULL)
@@ -396,6 +406,8 @@ void urlrouter_print(const urlrouter *router)
 	printf("URL Router:\n");
 	print_node(router->root, 0);
 }
+
+#endif // URLROUTER_IO
 
 #ifdef URLROUTER_TEST
 

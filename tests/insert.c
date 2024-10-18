@@ -5,26 +5,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define INSERT_TEST(name, ...)                                                     \
-	static void name(void)                                                         \
-	{                                                                              \
-		const void *routes[] = {__VA_ARGS__};                                      \
-		const size_t n = sizeof(routes) / 2;                                       \
-		urlrouter router = {0};                                                    \
-		char buf[1024 * 4] = {0};                                                  \
-		urlrouter_init(&router, buf, 1024 * 4);                                    \
-		for (size_t i = 0; i < n; i += 2)                                          \
-		{                                                                          \
-			printf("Adding route: %s\n", (const char *)routes[i]);                 \
-			const int err = urlrouter_add(&router, (const char *)routes[i], NULL); \
-			const int expected = (int)routes[i + 1];                               \
-			if (expected != err && expected < 0)                                   \
-			{                                                                      \
-				fprintf(stderr, "Test %s failed: %s, expected %d, found: %d\n",    \
-						#name, (const char *)routes[i], (int)routes[i + 1], err);  \
-				exit(1);                                                           \
-			}                                                                      \
-		}                                                                          \
+#define INSERT_TEST(name, ...)                                                                     \
+	static void name(void)                                                                         \
+	{                                                                                              \
+		const void *routes[] = {__VA_ARGS__};                                                      \
+		const size_t n = sizeof(routes) / sizeof(routes[0]);                                       \
+		urlrouter router = {0};                                                                    \
+		char buf[1024 * 4] = {0};                                                                  \
+		urlrouter_init(&router, buf, 1024 * 4);                                                    \
+		for (size_t i = 0; i < n; i += 2)                                                          \
+		{                                                                                          \
+			const char *route = (const char *)routes[i];                                           \
+			const int expected = (int)routes[i + 1];                                               \
+			printf("Adding route: %s\n", route);                                                   \
+			const int err = urlrouter_add(&router, route, NULL);                                   \
+			if (expected != err && expected < 0)                                                   \
+			{                                                                                      \
+				fprintf(stderr, "Test %s failed: %s, expected %d, found: %d\n", #name, route,      \
+						expected, err);                                                            \
+				exit(1);                                                                           \
+			}                                                                                      \
+		}                                                                                          \
 	}
 
 // clang-format off
@@ -36,23 +37,18 @@ INSERT_TEST(wildcard_conflict,
 			"/foo/bar", 							0,
 			"/foo/{name}", 							0,
 			"/foo/{names}", 						URLROUTER_ERR_PATH_EXISTS,
-			"/cmd/{*path}", 						URLROUTER_ERR_PATH_EXISTS,
 			"/cmd/{xxx}/names", 					0,
 			"/cmd/{tool}/{xxx}/foo", 				0,
-			"/src/{*filepath}", 					0,
-			"/src/{file}", 							URLROUTER_ERR_PATH_EXISTS,
+			"/src/{file}", 							0,
+			"/src/{files}", 						URLROUTER_ERR_PATH_EXISTS,
 			"/src/static.json",						0,
 			"/src/$filepathx", 						0,
 			"/src/", 								0,
 			"/src/foo/bar", 						0,
 			"/src1/", 								0,
-			"/src1/{*filepath}", 					0,
-			"/src2{*filepath}", 					0,
-			"/src2/{*filepath}", 					0,
 			"/src2/", 								0,
 			"/src2", 								0,
 			"/src3", 								0,
-			"/src3/{*filepath}", 					0,
 			"/search/{query}", 						0,
 			"/search/valid", 						0,
 			"/user_{name}", 						0,

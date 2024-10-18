@@ -11,10 +11,10 @@ insert: tests/insert.c urlrouter.o
 	$(CC) $(CFLAGS) -Wno-pointer-to-int-cast -Wno-int-conversion -I. -o tests/insert $^
 
 base_test: tests/test.c urlrouter.o
-	$(CC) $(CFLAGS) -Wno-pointer-to-int-cast -Wno-int-conversion -I. -o tests/test $^
+	$(CC) $(CFLAGS) -O3 -Wno-pointer-to-int-cast -Wno-int-conversion -I. -o tests/test $^
 
 tests/unittest: urlrouter.c
-	$(CC) $(CFLAGS) -O3 -DURLROUTER_TEST -DURLROUTER_IO -DURLROUTER_ASSERT -o tests/unittest $^
+	$(CC) $(CFLAGS) -DURLROUTER_TEST -DURLROUTER_IO -DURLROUTER_ASSERT -o tests/unittest $^
 
 urlrouter.o: urlrouter.c
 	$(CC) $(CFLAGS) -DURLROUTER_IO -c -o urlrouter.o urlrouter.c

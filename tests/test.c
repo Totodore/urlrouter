@@ -31,7 +31,7 @@ int main(void)
 	urlrouter_add(&router, "/cmd/vet", "/cmd/vet");
 	urlrouter_add(&router, "/foo/bar", "/foo/bar");
 	urlrouter_add(&router, "/foo/{name}", "/foo/{name}");
-	urlrouter_add(&router, "/foo/{names}", "/foo/{names}");
+	assert(urlrouter_add(&router, "/foo/{names}", "/foo/{names}") == URLROUTER_ERR_PATH_EXISTS);
 
 	assert(urlrouter_add(&router, "/cmd/{*path}", "/cmd/{*path}") == URLROUTER_ERR_MALFORMED_PATH); // NOT SUPPORTED
 	urlrouter_add(&router, "/cmd/{xxx}/names", "/cmd/{xxx}/names");
