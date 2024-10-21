@@ -54,8 +54,8 @@ int main(void)
 	urlrouter_add(&router, "/search/valid", "/search/valid");
 	urlrouter_add(&router, "/user_{name}", "/user_{name}");
 	urlrouter_add(&router, "/user_x", "/user_x");
-	// assert(urlrouter_add(&router, "/user_{bar}", "/user_{bar}") == URLROUTER_ERR_PATH_EXISTS);
-	urlrouter_add(&router, "/id{id}", "/id{id}");
+	assert(urlrouter_add(&router, "/user_{bar}", "/user_{bar}") == URLROUTER_ERR_PATH_EXISTS);
+	urlrouter_add(&router, "/id/{id}test", "/id/{id}test");
 	urlrouter_add(&router, "/id/{id}", "/id/{id}");
 	urlrouter_add(&router, "/src/foo/{bar}", "/src/foo/{bar}");
 	urlrouter_print(&router);
@@ -67,7 +67,7 @@ int main(void)
 
 	struct timespec start, end;
 	clock_gettime(CLOCK_MONOTONIC, &start);
-	const char *route = urlrouter_find(&router, "/azd/azdoinazdoin/edit", params, 5, &param_cnt);
+	const char *route = urlrouter_find(&router, "/id/azdoinazdointest", params, 5, &param_cnt);
 	clock_gettime(CLOCK_MONOTONIC, &end);
 
 	if (route)

@@ -24,12 +24,18 @@ static inline bool is_node_param(urlrouter_node *node)
 {
 	return node->frag[node->frag_len - 1] == '}' || node->frag[0] == '{';
 }
+static inline bool is_param_start(const char *str) { return *str == '{' && *(str + 1) != '{'; }
 
 // Only alphanumeric characters are allowed in path parameters
 static inline bool is_valid_param(char c)
 {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
 }
+static inline bool is_param_escape_start(const char *str)
+{
+	return *str == '{' && *(str + 1) == '{';
+}
+static inline bool is_param_escape_end(const char *str) { return *str == '}' && *(str + 1) == '}'; }
 
 static inline unsigned long rem_space(urlrouter *router)
 {
@@ -79,7 +85,7 @@ static inline int verify_path(const char *p)
 	int param_len = 0;
 	while (*p++)
 	{
-		if (is_param && ((!is_valid_param(*p) && *p != '}') || (*p == '}' && param_len < 2)))
+		if (is_param && ((!is_valid_param(*p) && *p != '}') || (*p == '}' && param_len < 1)))
 			return URLROUTER_ERR_MALFORMED_PATH;
 		else if (is_param)
 			param_len++;
@@ -172,34 +178,33 @@ int urlrouter_add(urlrouter *router, const char *path, const void *data)
 
 		// Iterate over the fragment until the path and current fragment
 		// don't match
+		bool frag_param_escape, path_param_escape = 0;
 		while (*frag == *p && !is_node_frag_end(node, frag) && *p != '\0')
 		{
-			// TODO: implement escaping with {{ }}
-			frag_param = *frag == '{';
-			path_param = *p == '{';
-			if (path_param || frag_param)
-				break;
-			p++;
-			frag++;
-		}
-		assert(!frag_param || *frag == '{'); // A frag param should start with a '{'
-		assert(!path_param || *path == '{'); // A frag param should start with a '{'
-		// If a frag parameter is detected we iterate over it to consume it.
-		while (frag_param && *frag++ != '}' && !is_node_frag_end(node, frag))
-			;
-		if (frag_param && *frag == '}')
-			frag++;
+			// If we match a parameter we consume the entire parameter name.
+			if (is_param_start(p) || is_param_start(frag))
+			{
+				printf("param detected %s %s\n", p, frag);
+				// If a frag parameter is detected we iterate over it to consume it.
+				while (*frag++ != '}' && !is_node_frag_end(node, frag))
+					;
+				assert(*frag != '}'); // it should be the end of the param
+				// If a path_param is detected we iterate over it to consume it and we
+				// verify that the param is valid
+				while (*p++ != '}' && *p != '\0')
+				{
+					if (!is_valid_param(*p) && *p != '}')
+						return URLROUTER_ERR_MALFORMED_PATH;
+				}
+				assert(*p != '}'); // it should be the end of the param
+			}
+			printf("%s %s\n", p, frag);
 
-		// If a path_param is detected we iterate over it to consume it and we
-		// verify that the param is valid
-		while (path_param && *p++ != '\0' && *p != '}')
-		{
-			if (!is_valid_param(*p))
-				return URLROUTER_ERR_MALFORMED_PATH;
+			if (*p != '\0')
+				p++;
+			if (*frag != '\0')
+				frag++;
 		}
-		if (path_param && *p == '}')
-			p++;
-		path_param = frag_param = 0;
 
 		if (is_node_frag_end(node, frag) && *p == '\0')
 			return URLROUTER_ERR_PATH_EXISTS;
@@ -227,6 +232,7 @@ int urlrouter_add(urlrouter *router, const char *path, const void *data)
 		// new node as a sibling
 		else if (!is_node_frag_end(node, frag))
 		{
+			printf("%s\n", p);
 			if (*p && verify_path(p) == URLROUTER_ERR_MALFORMED_PATH)
 				return URLROUTER_ERR_MALFORMED_PATH;
 
@@ -293,12 +299,14 @@ const void *urlrouter_find(const urlrouter *router, const char *path, urlparam *
 	if (!node)
 		return NULL;
 
+	// We iterate over the path
 	while (*p)
 	{
-
 		const char *frag = node->frag;
 		if (*frag == '{' && !is_node_frag_end(node, frag))
 		{
+			// If we want to store the parameters
+			// We start to store the parameter value
 			if (params && param_i < len)
 			{
 				params[param_i].value = p++;
@@ -306,9 +314,10 @@ const void *urlrouter_find(const urlrouter *router, const char *path, urlparam *
 				if (param_cnt)
 					++*param_cnt;
 			}
+			// We consume the parameter
 			while (*frag++ != '}' && !is_node_frag_end(node, frag))
 				;
-			// Bench between local var and constant deref in loop
+			// TODO: Bench between local var and constant deref in loop
 			while (*p != '/' && *p != '\0')
 			{
 				if (params && param_i < len)
