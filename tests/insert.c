@@ -5,6 +5,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static int RES_OK = 0;
+static int RES_ERR_PATH_EXIST = URLROUTER_ERR_PATH_EXISTS;
+static int RES_ERR_MALFORMED_PATH = URLROUTER_ERR_MALFORMED_PATH;
+static const char *ERRS[] = {
+	"OK",
+	"PATH_EXISTS",
+	"BUFF_FULL",
+	"MALFORMED_PATH",
+};
+
 #define INSERT_TEST(name, ...)                                                                     \
 	static void name(void)                                                                         \
 	{                                                                                              \
@@ -16,13 +26,13 @@
 		for (size_t i = 0; i < n; i += 2)                                                          \
 		{                                                                                          \
 			const char *route = (const char *)routes[i];                                           \
-			const int expected = (int)routes[i + 1];                                               \
+			const int expected = *(int *)routes[i + 1];                                            \
 			printf("Adding route: %s\n", route);                                                   \
 			const int err = urlrouter_add(&router, route, NULL);                                   \
 			if (expected != err && expected < 0)                                                   \
 			{                                                                                      \
-				fprintf(stderr, "Test %s failed: %s, expected %d, found: %d\n", #name, route,      \
-						expected, err);                                                            \
+				fprintf(stderr, "Test %s failed: %s, expected %s, found: %s\n", #name, route,      \
+						ERRS[-expected], ERRS[-err]);                                              \
 				exit(1);                                                                           \
 			}                                                                                      \
 		}                                                                                          \
@@ -31,173 +41,173 @@
 // clang-format off
 
 INSERT_TEST(wildcard_conflict,
-			"/cmd/{tool}/{sub}", 					0,
-			"/cmd/{tool}/{sub}", 					0,
-			"/cmd/vet", 							0,
-			"/foo/bar", 							0,
-			"/foo/{name}", 							0,
-			"/foo/{names}", 						URLROUTER_ERR_PATH_EXISTS,
-			"/cmd/{xxx}/names", 					0,
-			"/cmd/{tool}/{xxx}/foo", 				0,
-			"/src/{file}", 							0,
-			"/src/{files}", 						URLROUTER_ERR_PATH_EXISTS,
-			"/src/static.json",						0,
-			"/src/$filepathx", 						0,
-			"/src/", 								0,
-			"/src/foo/bar", 						0,
-			"/src1/", 								0,
-			"/src2/", 								0,
-			"/src2", 								0,
-			"/src3", 								0,
-			"/search/{query}", 						0,
-			"/search/valid", 						0,
-			"/user_{name}", 						0,
-			"/user_x", 								0,
-			"/user_{bar}", 							URLROUTER_ERR_PATH_EXISTS,
-			"/id{id}", 								0,
-			"/id/{id}", 							0
+			"/cmd/{tool}/{sub}", 					&RES_OK,
+			"/cmd/{tool}/{sub}", 					&RES_OK,
+			"/cmd/vet", 							&RES_OK,
+			"/foo/bar", 							&RES_OK,
+			"/foo/{name}", 							&RES_OK,
+			"/foo/{names}", 						&RES_ERR_PATH_EXIST,
+			"/cmd/{xxx}/names", 					&RES_OK,
+			"/cmd/{tool}/{xxx}/foo", 				&RES_OK,
+			"/src/{file}", 							&RES_OK,
+			"/src/{files}", 						&RES_ERR_PATH_EXIST,
+			"/src/static.json",						&RES_OK,
+			"/src/$filepathx", 						&RES_OK,
+			"/src/", 								&RES_OK,
+			"/src/foo/bar", 						&RES_OK,
+			"/src1/", 								&RES_OK,
+			"/src2/", 								&RES_OK,
+			"/src2", 								&RES_OK,
+			"/src3", 								&RES_OK,
+			"/search/{query}", 						&RES_OK,
+			"/search/valid", 						&RES_OK,
+			"/user_{name}", 						&RES_OK,
+			"/user_x", 								&RES_OK,
+			"/user_{bar}", 							&RES_ERR_PATH_EXIST,
+			"/id{id}", 								&RES_OK,
+			"/id/{id}", 							&RES_OK,
 )
 
 INSERT_TEST(invalid_catchall,
-	"/non-leading-{*catchall}", 					0,
-	"/foo/bar{*catchall}", 							0,
-	"/src/{*filepath}/x", 							URLROUTER_ERR_MALFORMED_PATH,
-	"/src2/", 										0,
-	"/src2/{*filepath}/x", 							URLROUTER_ERR_MALFORMED_PATH
+	"/non-leading-{*catchall}", 					&RES_OK,
+	"/foo/bar{*catchall}", 							&RES_OK,
+	"/src/{*filepath}/x", 							&RES_ERR_MALFORMED_PATH,
+	"/src2/", 										&RES_OK,
+	"/src2/{*filepath}/x", 							&RES_ERR_MALFORMED_PATH,
 )
 
 INSERT_TEST(catchall_root_conflict,
-	"/", 											0,
-	"/{*filepath}", 								URLROUTER_ERR_PATH_EXISTS
+	"/", 											&RES_OK,
+	"/{*filepath}", 								&RES_ERR_PATH_EXIST,
 )
 
 
 INSERT_TEST(child_conflict,
-	"/cmd/vet", 									0,
-	"/cmd/{tool}", 									0,
-	"/cmd/{tool}/{sub}", 							0,
-	"/cmd/{tool}/misc", 							0,
-	"/cmd/{tool}/{bad}", 							URLROUTER_ERR_PATH_EXISTS,
-	"/src/AUTHORS", 								0,
-	"/src/{*filepath}", 							0,
-	"/user_x", 										0,
-	"/user_{name}", 								0,
-	"/id/{id}", 									0,
-	"/id{id}", 										0,
-	"/{id}", 										0,
-	"/{*filepath}", 								URLROUTER_ERR_PATH_EXISTS
+	"/cmd/vet", 									&RES_OK,
+	"/cmd/{tool}", 									&RES_OK,
+	"/cmd/{tool}/{sub}", 							&RES_OK,
+	"/cmd/{tool}/misc", 							&RES_OK,
+	"/cmd/{tool}/{bad}", 							&RES_ERR_PATH_EXIST,
+	"/src/AUTHORS", 								&RES_OK,
+	"/src/{*filepath}", 							&RES_OK,
+	"/user_x", 										&RES_OK,
+	"/user_{name}", 								&RES_OK,
+	"/id/{id}", 									&RES_OK,
+	"/id{id}", 										&RES_OK,
+	"/{id}", 										&RES_OK,
+	"/{*filepath}", 								&RES_ERR_PATH_EXIST,
 )
 
 INSERT_TEST(duplicates,
-	"/", 											0,
-	"/", 											URLROUTER_ERR_PATH_EXISTS,
-	"/doc/", 										0,
-	"/doc/", 										URLROUTER_ERR_PATH_EXISTS,
-	"/src/{*filepath}", 							0,
-	"/src/{*filepath}", 							URLROUTER_ERR_PATH_EXISTS,
-	"/search/{query}", 								0,
-	"/search/{query}", 								URLROUTER_ERR_PATH_EXISTS,
-	"/user_{name}", 								0,
-	"/user_{name}", 								URLROUTER_ERR_PATH_EXISTS
+	"/", 											&RES_OK,
+	"/", 											&RES_ERR_PATH_EXIST,
+	"/doc/", 										&RES_OK,
+	"/doc/", 										&RES_ERR_PATH_EXIST,
+	"/src/{*filepath}", 							&RES_OK,
+	"/src/{*filepath}", 							&RES_ERR_PATH_EXIST,
+	"/search/{query}", 								&RES_OK,
+	"/search/{query}", 								&RES_ERR_PATH_EXIST,
+	"/user_{name}", 								&RES_OK,
+	"/user_{name}", 								&RES_ERR_PATH_EXIST,
 )
 
 INSERT_TEST(unnamed_param,
-	"/{}", 											URLROUTER_ERR_MALFORMED_PATH,
-	"/user{}", 										URLROUTER_ERR_MALFORMED_PATH,
-	"/cmd{}", 										URLROUTER_ERR_MALFORMED_PATH,
-	"/src{*}", 										URLROUTER_ERR_MALFORMED_PATH
+	"/{}", 											&RES_ERR_MALFORMED_PATH,
+	"/user{}", 										&RES_ERR_MALFORMED_PATH,
+	"/cmd{}", 										&RES_ERR_MALFORMED_PATH,
+	"/src{*}", 										&RES_ERR_MALFORMED_PATH,
 )
 
 INSERT_TEST(double_params,
-	"/{foo}{bar}", 									URLROUTER_ERR_MALFORMED_PATH,
-	"/{foo}{bar}/", 								URLROUTER_ERR_MALFORMED_PATH,
-	"/{foo}{{*bar}/", 								URLROUTER_ERR_MALFORMED_PATH
+	"/{foo}{bar}", 									&RES_ERR_MALFORMED_PATH,
+	"/{foo}{bar}/", 								&RES_ERR_MALFORMED_PATH,
+	"/{foo}{{*bar}/", 								&RES_ERR_MALFORMED_PATH,
 )
 
 INSERT_TEST(normalized_conflict,
-	"/x/{foo}/bar", 								0,
-	"/x/{bar}/bar", 								URLROUTER_ERR_PATH_EXISTS,
-	"/{y}/bar/baz", 								0,
-	"/{y}/baz/baz", 								0,
-	"/{z}/bar/bat", 								0,
-	"/{z}/bar/baz", 								URLROUTER_ERR_PATH_EXISTS
+	"/x/{foo}/bar", 								&RES_OK,
+	"/x/{bar}/bar", 								&RES_ERR_PATH_EXIST,
+	"/{y}/bar/baz", 								&RES_OK,
+	"/{y}/baz/baz", 								&RES_OK,
+	"/{z}/bar/bat", 								&RES_OK,
+	"/{z}/bar/baz", 								&RES_ERR_PATH_EXIST,
 )
 
 INSERT_TEST(more_conflicts,
-	"/con{tact}", 									0,
-	"/who/are/{*you}", 								0,
-	"/who/foo/hello", 								0,
-	"/whose/{users}/{name}", 						0,
-	"/who/are/foo", 								0,
-	"/who/are/foo/bar", 							0,
-	"/con{nection}", 								URLROUTER_ERR_PATH_EXISTS,
-	"/whose/{users}/{user}", 						URLROUTER_ERR_PATH_EXISTS
+	"/con{tact}", 									&RES_OK,
+	"/who/are/{*you}", 								&RES_OK,
+	"/who/foo/hello", 								&RES_OK,
+	"/whose/{users}/{name}", 						&RES_OK,
+	"/who/are/foo", 								&RES_OK,
+	"/who/are/foo/bar", 							&RES_OK,
+	"/con{nection}", 								&RES_ERR_PATH_EXIST,
+	"/whose/{users}/{user}", 						&RES_ERR_PATH_EXIST
 )
 
 INSERT_TEST(catchall_static_overlap_1,
-	"/bar", 										0,
-	"/bar/", 										0,
-	"/bar/{*foo}", 									0
+	"/bar", 										&RES_OK,
+	"/bar/", 										&RES_OK,
+	"/bar/{*foo}", 									&RES_OK,
 )
 
 INSERT_TEST(catchall_static_overlap_2,
-	"/foo", 										0,
-	"/{*bar}", 										0,
-	"/bar", 										0,
-	"/baz", 										0,
-	"/baz/{split}", 								0,
-	"/", 											0,
-	"/{*bar}", 										URLROUTER_ERR_PATH_EXISTS,
-	"/{*zzz}", 										URLROUTER_ERR_PATH_EXISTS,
-	"/{xxx}", 										URLROUTER_ERR_PATH_EXISTS
+	"/foo", 										&RES_OK,
+	"/{*bar}", 										&RES_OK,
+	"/bar", 										&RES_OK,
+	"/baz", 										&RES_OK,
+	"/baz/{split}", 								&RES_OK,
+	"/", 											&RES_OK,
+	"/{*bar}", 										&RES_ERR_PATH_EXIST,
+	"/{*zzz}", 										&RES_ERR_PATH_EXIST,
+	"/{xxx}", 										&RES_ERR_PATH_EXIST,
 )
 
 INSERT_TEST(catchall_static_overlap_3,
-	"/{*bar}", 										0,
-	"/bar", 										0,
-	"/bar/x", 										0,
-	"/bar_{x}", 									0,
-	"/bar_{x}", 									URLROUTER_ERR_PATH_EXISTS,
-	"/bar_{x}/y", 									0,
-	"/bar/{x}", 									0
+	"/{*bar}", 										&RES_OK,
+	"/bar", 										&RES_OK,
+	"/bar/x", 										&RES_OK,
+	"/bar_{x}", 									&RES_OK,
+	"/bar_{x}", 									&RES_ERR_PATH_EXIST,
+	"/bar_{x}/y", 									&RES_OK,
+	"/bar/{x}", 									&RES_OK,
 )
 
 INSERT_TEST(duplicate_conflict,
-	"/hey", 										0,
-	"/hey/users", 									0,
-	"/hey/user", 									0,
-	"/hey/user", 									URLROUTER_ERR_PATH_EXISTS
+	"/hey", 										&RES_OK,
+	"/hey/users", 									&RES_OK,
+	"/hey/user", 									&RES_OK,
+	"/hey/user", 									&RES_ERR_PATH_EXIST,
 )
 
 INSERT_TEST(invalid_param,
-	"{", 											URLROUTER_ERR_MALFORMED_PATH,
-	"}", 											URLROUTER_ERR_MALFORMED_PATH,
-	"x{y", 											URLROUTER_ERR_MALFORMED_PATH,
-	"x}", 											URLROUTER_ERR_MALFORMED_PATH,
-	"/{foo}s", 										URLROUTER_ERR_MALFORMED_PATH
+	"{", 											&RES_ERR_MALFORMED_PATH,
+	"}", 											&RES_ERR_MALFORMED_PATH,
+	"x{y", 											&RES_ERR_MALFORMED_PATH,
+	"x}", 											&RES_ERR_MALFORMED_PATH,
+	"/{foo}s", 										&RES_ERR_MALFORMED_PATH,
 )
 
 INSERT_TEST(escaped_param,
-	"{{", 											0,
-	"}}", 											0,
-	"xx}}", 										0,
-	"}}yy", 										0,
-	"}}yy{{}}", 									0,
-	"}}yy{{}}{{}}y{{", 								0,
-	"}}yy{{}}{{}}y{{", 								URLROUTER_ERR_PATH_EXISTS,
-	"/{{yy", 										0,
-	"/{yy}", 										0,
-	"/foo", 										0,
-	"/foo/{{", 										0,
-	"/foo/{{/{x}", 									0,
-	"/foo/{ba{{r}", 								0,
-	"/bar/{ba}}r}", 								0,
-	"/xxx/{x{{}}y}", 								0
+	"{{", 											&RES_OK,
+	"}}", 											&RES_OK,
+	"xx}}", 										&RES_OK,
+	"}}yy", 										&RES_OK,
+	"}}yy{{}}", 									&RES_OK,
+	"}}yy{{}}{{}}y{{", 								&RES_OK,
+	"}}yy{{}}{{}}y{{", 								&RES_ERR_PATH_EXIST,
+	"/{{yy", 										&RES_OK,
+	"/{yy}", 										&RES_OK,
+	"/foo", 										&RES_OK,
+	"/foo/{{", 										&RES_OK,
+	"/foo/{{/{x}", 									&RES_OK,
+	"/foo/{ba{{r}", 								&RES_OK,
+	"/bar/{ba}}r}", 								&RES_OK,
+	"/xxx/{x{{}}y}", 								&RES_OK,
 )
 
 INSERT_TEST(bare_catchall,
-	"{*foo}", 										0,
-	"foo/{*bar}", 									0
+	"{*foo}", 										&RES_OK,
+	"foo/{*bar}", 									&RES_OK,
 )
 
 int main(void)
