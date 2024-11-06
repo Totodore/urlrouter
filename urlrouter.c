@@ -49,9 +49,6 @@ static inline unsigned int str_len(const char *s)
 		;
 	return p - s;
 }
-static inline char readc(const char **cursor) { return *(*cursor)++; }
-static inline char peekc(const char **cursor) { return **cursor; }
-static inline void advancec(const char **cursor) { (*cursor)++; }
 
 // Create a new node and insert it in the router buffer.
 // If there is not enough space, returns NULL.
@@ -91,10 +88,12 @@ static inline int verify_path(const char *p)
 			param_len++;
 
 		// Path parameter is closed or opened
-		if (*p == '}' && is_param)
-			is_param = param_len = 0;
+		if (*p == '}' && is_param && *(p + 1) != '/' && *(p + 1) != '\0')
+			return URLROUTER_ERR_MALFORMED_PATH;
 		else if (*p == '}' && !is_param)
 			return URLROUTER_ERR_MALFORMED_PATH;
+		else if (*p == '}' && is_param)
+			is_param = param_len = 0;
 		else if (*p == '{')
 			is_param = 1;
 	}
