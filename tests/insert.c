@@ -28,12 +28,14 @@ static const char *ERRS[] = {
 		{                                                                                          \
 			const char *route = (const char *)routes[i];                                           \
 			const int expected = *(int *)routes[i + 1];                                            \
-			printf("Adding route: %s\n", route);                                                   \
-			const int err = urlrouter_add(&router, route, NULL);                                   \
-			if (expected != err && expected < 0)                                                   \
+			printf("\tAdding route: %s\n", route);                                                 \
+			const int res = urlrouter_add(&router, route, 1);                                      \
+			const unsigned int err = res < 0 ? res : 0;                                            \
+			if (expected != err)                                                                   \
 			{                                                                                      \
+				urlrouter_print(&router);                                                          \
 				fprintf(stderr, "Test %s failed: %s, expected %s, found: %s\n", #name, route,      \
-						ERRS[-expected], err < 0 ? ERRS[-err] : "OK");                             \
+						ERRS[expected], ERRS[-err]);                                               \
 				exit(1);                                                                           \
 			}                                                                                      \
 		}                                                                                          \
@@ -43,7 +45,6 @@ static const char *ERRS[] = {
 // clang-format off
 
 INSERT_TEST(wildcard_conflict,
-			"/cmd/{tool}/{sub}", 					&RES_OK,
 			"/cmd/{tool}/{sub}", 					&RES_OK,
 			"/cmd/vet", 							&RES_OK,
 			"/foo/bar", 							&RES_OK,
