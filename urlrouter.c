@@ -185,7 +185,6 @@ int urlrouter_add(urlrouter *router, const char *path, const void *data)
 			// If we match a parameter we consume the entire parameter name.
 			if (is_param_start(p) || is_param_start(frag))
 			{
-				printf("param detected %s %s\n", p, frag);
 				// If a frag parameter is detected we iterate over it to consume it.
 				while (*frag++ != '}' && !is_node_frag_end(node, frag))
 					;
@@ -199,7 +198,6 @@ int urlrouter_add(urlrouter *router, const char *path, const void *data)
 				}
 				assert(*p != '}'); // it should be the end of the param
 			}
-			printf("%s %s\n", p, frag);
 
 			if (*p != '\0')
 				p++;
@@ -208,7 +206,17 @@ int urlrouter_add(urlrouter *router, const char *path, const void *data)
 		}
 
 		if (is_node_frag_end(node, frag) && *p == '\0')
-			return URLROUTER_ERR_PATH_EXISTS;
+		{
+			// If this is the end of the fragment and the path but the node has no data
+			// We can set the data, otherwise it means that the path already exists.
+			if (node->data == NULL)
+			{
+				node->data = data;
+				return rem_space(router);
+			}
+			else
+				return URLROUTER_ERR_PATH_EXISTS;
+		}
 
 		if (node->first_child && is_node_frag_end(node, frag))
 		{
@@ -233,7 +241,7 @@ int urlrouter_add(urlrouter *router, const char *path, const void *data)
 		// new node as a sibling
 		else if (!is_node_frag_end(node, frag))
 		{
-			printf("%s\n", p);
+			printf("splitting_node: %s\n", p);
 			if (*p && verify_path(p) == URLROUTER_ERR_MALFORMED_PATH)
 				return URLROUTER_ERR_MALFORMED_PATH;
 
@@ -241,15 +249,16 @@ int urlrouter_add(urlrouter *router, const char *path, const void *data)
 			if (rem_space(router) < node_cnt * sizeof(urlrouter_node))
 				return URLROUTER_ERR_BUFF_FULL;
 
+			unsigned int split_idx = frag - node->frag;
 			urlrouter_node *splited_node =
-				create_node(router, node->frag + (frag - node->frag),
-							node->frag_len - (frag - node->frag), node->data);
+				create_node(router, node->frag + split_idx, node->frag_len - split_idx, node->data);
 			assert(splited_node != NULL);
 
 			splited_node->first_child = node->first_child;
 
 			// Transform the current node into a parent subset
 			node->frag_len = frag - node->frag;
+			node->data = NULL;
 
 			if (*p != '\0')
 			{
