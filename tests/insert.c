@@ -35,7 +35,7 @@ static const char *ERRS[] = {
 			{                                                                                      \
 				urlrouter_print(&router);                                                          \
 				fprintf(stderr, "Test %s failed: %s, expected %s, found: %s\n", #name, route,      \
-						ERRS[expected], ERRS[-err]);                                               \
+						ERRS[-expected], ERRS[-err]);                                              \
 				exit(1);                                                                           \
 			}                                                                                      \
 		}                                                                                          \

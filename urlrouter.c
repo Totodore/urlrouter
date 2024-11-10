@@ -47,11 +47,13 @@ static inline bool is_node_param(urlrouter_node *node)
 	return node->frag[node->frag_len - 1] == '}' || node->frag[0] == '{';
 }
 static inline bool is_param_start(const char *str) { return *str == '{' && *(str + 1) != '{'; }
+static inline bool is_param_end(const char *str) { return *str == '}' && *(str + 1) != '}'; }
 
 // Only alphanumeric characters are allowed in path parameters
 static inline bool is_valid_param(char c)
 {
-	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '{' ||
+		   c == '}';
 }
 static inline bool is_param_escape_start(const char *str)
 {
@@ -92,6 +94,8 @@ static inline urlrouter_node *create_node(urlrouter *router, const char *frag,
 	return node;
 }
 
+#define DBG(x) printf("DEBUG [%d]: %s\n", __LINE__, x);
+
 // Check if the path is malformed:
 // - Path parameters should be closed
 // - Path parameters should only contain alphanumeric characters
@@ -100,24 +104,42 @@ static inline int verify_path(const char *p)
 	if (*p == '\0' || (*p == '}' && *(p + 1) == '\0'))
 		return URLROUTER_ERR_MALFORMED_PATH;
 
-	bool is_param = *p == '{';
+	bool is_param = is_param_start(p);
 	int param_len = 0;
-	while (*p++)
+	while (*p)
 	{
-		if (is_param && ((!is_valid_param(*p) && *p != '}') || (*p == '}' && param_len < 1)))
-			return URLROUTER_ERR_MALFORMED_PATH;
-		else if (is_param)
-			param_len++;
+		// Check for escaped characters ('{{' and '}}')
+		if (is_param_escape_start(p) || is_param_escape_end(p))
+		{
+			p += 2; // Skip escaped braces
+			continue;
+		}
 
-		// Path parameter is closed or opened
-		if (*p == '}' && is_param && *(p + 1) != '/' && *(p + 1) != '\0')
-			return URLROUTER_ERR_MALFORMED_PATH;
-		else if (*p == '}' && !is_param)
-			return URLROUTER_ERR_MALFORMED_PATH;
-		else if (*p == '}' && is_param)
-			is_param = param_len = 0;
-		else if (*p == '{')
-			is_param = 1;
+		if (is_param)
+		{
+			param_len++;
+			if (is_param_end(p))
+			{
+				char next = *(p + 1);
+				// When closing a path parameter, the next character
+				// should be the end of a fragment
+				if ((next != '/' && next != '\0') || param_len < 2)
+					return URLROUTER_ERR_MALFORMED_PATH;
+				else
+					is_param = param_len = 0;
+			}
+			else if (!is_valid_param(*p))
+				return URLROUTER_ERR_MALFORMED_PATH;
+		}
+		else
+		{
+			if (is_param_end(p)) // Closing a path parameter that was not opened
+				return URLROUTER_ERR_MALFORMED_PATH;
+			else
+				is_param = is_param_start(p);
+		}
+
+		p++;
 	}
 
 	if (is_param) // Path parameter is not closed
@@ -215,7 +237,7 @@ int urlrouter_add(urlrouter *router, const char *path, const void *data)
 				// verify that the param is valid
 				while (*p++ != '}' && *p != '\0')
 				{
-					if (!is_valid_param(*p) && *p != '}')
+					if (!is_valid_param(*p))
 						return URLROUTER_ERR_MALFORMED_PATH;
 				}
 				assert(*p != '}'); // it should be the end of the param
