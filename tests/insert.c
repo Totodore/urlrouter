@@ -159,7 +159,52 @@ INSERT_TEST(escaped_param,
 INSERT_TEST(double_params,
 	"/{foo}{bar}", 									&RES_ERR_MALFORMED_PATH,
 	"/{foo}{bar}/", 								&RES_ERR_MALFORMED_PATH,
+	// {{ is an escape for {, leaving *bar} with an unmatched }
 	"/{foo}{{*bar}/", 								&RES_ERR_MALFORMED_PATH,
+)
+
+// Routes without a leading slash are valid (matchit: missing_leading_slash_conflict)
+INSERT_TEST(no_leading_slash,
+	"foo",											&RES_OK,
+	"foo/",											&RES_OK,
+	"foo",											&RES_ERR_PATH_EXIST,
+	"{foo}/",										&RES_OK,
+	"{bar}/",										&RES_ERR_PATH_EXIST, // normalizes same as {foo}/
+)
+
+// Trailing slash creates a distinct route from the same path without it
+INSERT_TEST(trailing_slash,
+	"/a/{x}",										&RES_OK,
+	"/a/{x}/",										&RES_OK,   // different: trailing slash
+	"/a/{y}",										&RES_ERR_PATH_EXIST,
+	"/a/{y}/",										&RES_ERR_PATH_EXIST,
+	"/b",											&RES_OK,
+	"/b/",											&RES_OK,
+	"/b",											&RES_ERR_PATH_EXIST,
+	"/b/",											&RES_ERR_PATH_EXIST,
+)
+
+// Conflicts between routes with a static prefix before a parameter
+// (matchit: prefix_suffix_conflict, suffix cases excluded — we reject suffix-after-param)
+INSERT_TEST(prefix_param_conflict,
+	// Pure param and prefix+param at the same level are distinct (different first char)
+	"/a/{x}",										&RES_OK,
+	"/a/prefix{x}",									&RES_OK,
+	// Same prefix, different param name: conflict (normalizes the same)
+	"/a/prefix{y}",									&RES_ERR_PATH_EXIST,
+	// Different prefix: no conflict
+	"/a/other{x}",									&RES_OK,
+	"/a/other{y}",									&RES_ERR_PATH_EXIST,
+	// Suffix after param is invalid
+	"/a/{x}y",										&RES_ERR_MALFORMED_PATH,
+	// Multi-segment with and without prefix
+	"/b/{x}/end",									&RES_OK,
+	"/b/{y}/end",									&RES_ERR_PATH_EXIST,
+	"/b/prefix{x}/end",								&RES_OK,
+	"/b/prefix{y}/end",								&RES_ERR_PATH_EXIST,
+	// prefix+param and pure param in the same segment don't conflict
+	"/c/prefix{x}",									&RES_OK,
+	"/c/{x}",										&RES_OK,
 )
 
 int main(void)
@@ -174,6 +219,9 @@ int main(void)
 	invalid_param();
 	escaped_param();
 	double_params();
+	no_leading_slash();
+	trailing_slash();
+	prefix_param_conflict();
 
 	return 0;
 }

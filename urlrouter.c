@@ -160,16 +160,19 @@ int urlrouter_add(urlrouter *router, const char *path, const void *data)
 {
 	assert(path != NULL);
 
+	// Validate the full path upfront so that partial-path checks later
+	// (which only see the remaining suffix) cannot miss invalid patterns
+	// such as a static suffix immediately after a closed parameter.
+	int err = verify_path(path);
+	if (err != 0)
+		return err;
+
 	const char *p = path;
 	urlrouter_node *node = router->root, *previous = NULL;
-	bool frag_param = 0, path_param = 0;
 
 	// root is null (initial conditions)
 	if (node == NULL)
 	{
-		int err = verify_path(p);
-		if (err != 0)
-			return err;
 
 		node = create_node(router, p, str_len(p), data);
 		if (node == NULL)
@@ -255,6 +258,9 @@ int urlrouter_add(urlrouter *router, const char *path, const void *data)
 						return URLROUTER_ERR_MALFORMED_PATH;
 				}
 				assert(*p != '}'); // it should be the end of the param
+				// The inner loops already advanced frag and p past `}`.
+				// Skip the end-of-loop advance to avoid consuming the character after `}`.
+				continue;
 			}
 
 			if (*p != '\0')
