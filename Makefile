@@ -3,7 +3,7 @@ CFLAGS = -std=c99 -Wpedantic -Wall -Wextra -g -fsanitize=address
 .PHONY: clean all_tests
 
 example: example.c urlrouter.o
-	$(CC) -o example $^
+	$(CC) $(CFLAGS) -o example $^
 
 all_tests: insert base_test tests/unittest
 
