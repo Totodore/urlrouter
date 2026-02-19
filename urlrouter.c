@@ -41,11 +41,13 @@ static inline bool is_node_frag_end(urlrouter_node *node, const char *frag)
 {
 	return frag - node->frag == node->frag_len;
 }
-// A node param has a fragment that starts with '{' and ends with '}'.
-// TODO: check with escaping characters
+// A node param has a fragment that starts with '{' (not '{{') and/or ends with '}' (not '}}').
 static inline bool is_node_param(urlrouter_node *node)
 {
-	return node->frag[node->frag_len - 1] == '}' || node->frag[0] == '{';
+	if (node->frag_len < 2)
+		return 0;
+	return (node->frag[node->frag_len - 1] == '}' && node->frag[node->frag_len - 2] != '}') ||
+	       (node->frag[0] == '{' && node->frag[1] != '{');
 }
 static inline bool is_param_start(const char *str) { return *str == '{' && *(str + 1) != '{'; }
 static inline bool is_param_end(const char *str) { return *str == '}' && *(str + 1) != '}'; }
