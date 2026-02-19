@@ -71,19 +71,6 @@ INSERT_TEST(wildcard_conflict,
 			"/id/{id}", 							&RES_OK,
 )
 
-INSERT_TEST(invalid_catchall,
-	"/non-leading-{*catchall}", 					&RES_OK,
-	"/foo/bar{*catchall}", 							&RES_OK,
-	"/src/{*filepath}/x", 							&RES_ERR_MALFORMED_PATH,
-	"/src2/", 										&RES_OK,
-	"/src2/{*filepath}/x", 							&RES_ERR_MALFORMED_PATH,
-)
-
-INSERT_TEST(catchall_root_conflict,
-	"/", 											&RES_OK,
-	"/{*filepath}", 								&RES_ERR_PATH_EXIST,
-)
-
 
 INSERT_TEST(child_conflict,
 	"/cmd/vet", 									&RES_OK,
@@ -92,13 +79,11 @@ INSERT_TEST(child_conflict,
 	"/cmd/{tool}/misc", 							&RES_OK,
 	"/cmd/{tool}/{bad}", 							&RES_ERR_PATH_EXIST,
 	"/src/AUTHORS", 								&RES_OK,
-	// "/src/{*filepath}", 							&RES_OK,
 	"/user_x", 										&RES_OK,
 	"/user_{name}", 								&RES_OK,
 	"/id/{id}", 									&RES_OK,
 	"/id{id}", 										&RES_OK,
 	"/{id}", 										&RES_OK,
-	// "/{*filepath}", 								&RES_ERR_PATH_EXIST,
 )
 
 INSERT_TEST(duplicates,
@@ -106,8 +91,6 @@ INSERT_TEST(duplicates,
 	"/", 											&RES_ERR_PATH_EXIST,
 	"/doc/", 										&RES_OK,
 	"/doc/", 										&RES_ERR_PATH_EXIST,
-	// "/src/{*filepath}", 							&RES_OK,
-	// "/src/{*filepath}", 							&RES_ERR_PATH_EXIST,
 	"/search/{query}", 								&RES_OK,
 	"/search/{query}", 								&RES_ERR_PATH_EXIST,
 	"/user_{name}", 								&RES_OK,
@@ -132,41 +115,12 @@ INSERT_TEST(normalized_conflict,
 
 INSERT_TEST(more_conflicts,
 	"/con{tact}", 									&RES_OK,
-	// "/who/are/{*you}", 								&RES_OK,
 	"/who/foo/hello", 								&RES_OK,
 	"/whose/{users}/{name}", 						&RES_OK,
 	"/who/are/foo", 								&RES_OK,
 	"/who/are/foo/bar", 							&RES_OK,
 	"/con{nection}", 								&RES_ERR_PATH_EXIST,
 	"/whose/{users}/{user}", 						&RES_ERR_PATH_EXIST
-)
-
-INSERT_TEST(catchall_static_overlap_1,
-	"/bar", 										&RES_OK,
-	"/bar/", 										&RES_OK,
-	"/bar/{*foo}", 									&RES_OK,
-)
-
-INSERT_TEST(catchall_static_overlap_2,
-	"/foo", 										&RES_OK,
-	"/{*bar}", 										&RES_OK,
-	"/bar", 										&RES_OK,
-	"/baz", 										&RES_OK,
-	"/baz/{split}", 								&RES_OK,
-	"/", 											&RES_OK,
-	"/{*bar}", 										&RES_ERR_PATH_EXIST,
-	"/{*zzz}", 										&RES_ERR_PATH_EXIST,
-	"/{xxx}", 										&RES_ERR_PATH_EXIST,
-)
-
-INSERT_TEST(catchall_static_overlap_3,
-	"/{*bar}", 										&RES_OK,
-	"/bar", 										&RES_OK,
-	"/bar/x", 										&RES_OK,
-	"/bar_{x}", 									&RES_OK,
-	"/bar_{x}", 									&RES_ERR_PATH_EXIST,
-	"/bar_{x}/y", 									&RES_OK,
-	"/bar/{x}", 									&RES_OK,
 )
 
 INSERT_TEST(duplicate_conflict,
@@ -202,36 +156,24 @@ INSERT_TEST(escaped_param,
 	"/xxx/{x{{}}y}", 								&RES_OK,
 )
 
-INSERT_TEST(bare_catchall,
-	"{*foo}", 										&RES_OK,
-	"foo/{*bar}", 									&RES_OK,
-)
-
 INSERT_TEST(double_params,
 	"/{foo}{bar}", 									&RES_ERR_MALFORMED_PATH,
 	"/{foo}{bar}/", 								&RES_ERR_MALFORMED_PATH,
-	// "/{foo}{{*bar}/", 								&RES_ERR_MALFORMED_PATH,
+	"/{foo}{{*bar}/", 								&RES_ERR_MALFORMED_PATH,
 )
 
 int main(void)
 {
 	wildcard_conflict();
-	// invalid_catchall();
-	// catchall_root_conflict();
 	child_conflict();
 	duplicates();
 	unnamed_param();
 	normalized_conflict();
 	more_conflicts();
-	// catchall_static_overlap_1();
-	// catchall_static_overlap_2();
-	// catchall_static_overlap_3();
 	duplicate_conflict();
 	invalid_param();
 	escaped_param();
 	double_params();
-
-	// bare_catchall();
 
 	return 0;
 }
