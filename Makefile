@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -std=c99 -Wpedantic -Wall -Wextra -g
+CFLAGS = -std=c99 -Wpedantic -Wall -Wextra -g -fsanitize=address
 .PHONY: clean all_tests
 
 example: example.c urlrouter.o
@@ -7,7 +7,7 @@ example: example.c urlrouter.o
 
 all_tests: insert base_test tests/unittest
 
-insert: tests/insert.c urlrouter.o
+tests/insert: tests/insert.c urlrouter.o
 	$(CC) $(CFLAGS) -Wno-pointer-to-int-cast -Wno-int-conversion -I. -o tests/insert $^
 
 base_test: tests/test.c urlrouter.o

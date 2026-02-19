@@ -27,7 +27,7 @@ static const char *ERRS[] = {
 		for (size_t i = 0; i < n; i += 2)                                                          \
 		{                                                                                          \
 			const char *route = (const char *)routes[i];                                           \
-			const int expected = *(int *)routes[i + 1];                                            \
+			const unsigned int expected = *(unsigned int *)routes[i + 1];                          \
 			printf("\tAdding route: %s\n", route);                                                 \
 			const int res = urlrouter_add(&router, route, 1);                                      \
 			const unsigned int err = res < 0 ? res : 0;                                            \

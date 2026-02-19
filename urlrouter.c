@@ -34,8 +34,9 @@
 
 typedef char bool;
 
-// Check if the current frag is exhausted.
-// The given node should match the given frag.
+// Check if the current frag pointer has reached the end of the node's fragment.
+// `frag` MUST be a pointer within node->frag (i.e. node->frag <= frag <= node->frag + node->frag_len).
+// Passing an unrelated pointer results in undefined behavior.
 static inline bool is_node_frag_end(urlrouter_node *node, const char *frag)
 {
 	return frag - node->frag == node->frag_len;
@@ -223,11 +224,24 @@ int urlrouter_add(urlrouter *router, const char *path, const void *data)
 
 		// Iterate over the fragment until the path and current fragment
 		// don't match
-		bool frag_param_escape, path_param_escape = 0;
+		bool frag_param_escape, path_param_escape;
 		while (*frag == *p && !is_node_frag_end(node, frag) && *p != '\0')
 		{
-			// If we match a parameter we consume the entire parameter name.
-			if (is_param_start(p) || is_param_start(frag))
+			frag_param_escape = is_param_escape_start(frag);
+			path_param_escape = is_param_escape_start(p);
+
+			// One side has a {{ escape and the other has a {param}: they represent
+			// different patterns and don't match, break to split the node.
+			if (frag_param_escape != path_param_escape)
+				break;
+
+			if (frag_param_escape) // both sides have {{ - advance past the second {
+			{
+				frag++;
+				p++;
+				// The loop's own p++/frag++ below completes the advance past {{
+			}
+			else if (is_param_start(p) || is_param_start(frag))
 			{
 				// If a frag parameter is detected we iterate over it to consume it.
 				while (*frag++ != '}' && !is_node_frag_end(node, frag))
@@ -285,7 +299,6 @@ int urlrouter_add(urlrouter *router, const char *path, const void *data)
 		// new node as a sibling
 		else if (!is_node_frag_end(node, frag))
 		{
-			printf("splitting_node: %s\n", p);
 			if (*p && verify_path(p) == URLROUTER_ERR_MALFORMED_PATH)
 				return URLROUTER_ERR_MALFORMED_PATH;
 
@@ -371,7 +384,7 @@ const void *urlrouter_find(const urlrouter *router, const char *path, urlparam *
 			// We consume the parameter
 			while (*frag++ != '}' && !is_node_frag_end(node, frag))
 				;
-			// TODO: Bench between local var and constant deref in loop
+
 			while (*p != '/' && *p != '\0')
 			{
 				if (params && param_i < len)
@@ -396,6 +409,7 @@ const void *urlrouter_find(const urlrouter *router, const char *path, urlparam *
 				}
 				while (*frag++ != '}' && !is_node_frag_end(node, frag))
 					;
+
 				// Bench between local var and constant deref in loop
 				while (*p != '/' && *p != '\0')
 				{
@@ -480,8 +494,8 @@ void test_verify_path(void)
 	assert(verify_path("azd{azdazd}") == 0);
 	assert(verify_path("azd{azdazd}") == 0);
 	assert(verify_path("checkaz{") == URLROUTER_ERR_MALFORMED_PATH);
-	assert(verify_path("checkaz}") == 0);
-	assert(verify_path("azdiazd}") == 0);
+	assert(verify_path("checkaz}") == URLROUTER_ERR_MALFORMED_PATH);
+	assert(verify_path("azdiazd}") == URLROUTER_ERR_MALFORMED_PATH);
 	assert(verify_path("a?zdiaz") == 0);
 	assert(verify_path("aézdiaz") == 0);
 	assert(verify_path("aézdi/{éazdazd}/az") == URLROUTER_ERR_MALFORMED_PATH);
@@ -492,17 +506,16 @@ void test_verify_path(void)
 }
 void test_node_frag_end(void)
 {
-	const char frag[] = "test";
-	urlrouter_node node = {.frag = frag, .frag_len = sizeof("test")};
+	const char *frag = "test";
+	urlrouter_node node = {.frag = frag, .frag_len = str_len(frag)};
 	assert(!is_node_frag_end(&node, frag));
 	assert(is_node_frag_end(&node, frag + 4));
-	assert(is_node_frag_end(&node, ""));
 }
 
 int main()
 {
 	test_verify_path();
-	// test_node_frag_end();
+	test_node_frag_end();
 	printf("All tests passed!\n");
 	return 0;
 }
