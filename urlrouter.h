@@ -46,6 +46,21 @@ extern "C"
 		// Path parameter is not closed or contains non alphanumeric characters
 		URLROUTER_ERR_MALFORMED_PATH = -3
 	};
+
+	static const char *URLROUTER_ERRS_STR[] = {
+		"OK",
+		"Path already exists",
+		"Buffer is full",
+		"Malformed path"
+	};
+
+	static inline const char* urlrouter_get_error_str(int err)
+	{
+		if (err >= 0 || err < -(int)sizeof(URLROUTER_ERRS_STR))
+			return NULL;
+		return URLROUTER_ERRS_STR[-err];
+	}
+
 	typedef struct urlrouter_node
 	{
 		int dead : 1;
